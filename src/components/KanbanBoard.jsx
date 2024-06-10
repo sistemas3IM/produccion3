@@ -14,6 +14,7 @@ import { createPortal } from "react-dom";
 import TaskCard from "./TaskCard";
 import ModalEditCard from "./ModalEditCard";
 import { endpoint, CREDENTIALS } from "../config";
+import { set } from "date-fns";
 
 const defaultCols = [
     {
@@ -57,6 +58,8 @@ function KanbanBoard() {
 
     const [filterTask, setFilterTask] = useState(defaultTasks)
 
+    const [updateSuccess, setUpdateSuccess] = useState(false);
+
     const handleOpenModal = () => setIsOpen(true);
     const handleCloseModal = () => setIsOpen(false);
 
@@ -87,8 +90,19 @@ function KanbanBoard() {
 
         fetchData();
         fetchPostura();
-    }, []);
+        setUpdateSuccess(false);
+    }, [updateSuccess]);
 
+
+    const putPostura = async (id, data) => {
+        try {
+            const response = await axios.put(`${endpoint.tajetas_of}/${id}${CREDENTIALS}`, data);
+            console.log(response.data);
+            setUpdateSuccess(true);
+        } catch (error) {
+            console.error(error);
+        }
+    };
 
     const setData = (data) => {
         const tasks = data.map((item) => ({
@@ -116,16 +130,21 @@ function KanbanBoard() {
         })
     );
 
-        
+    const onDropTask = (taskId, columnId) => {
+        const task = apiData.find((task) => task.idTarjetaOf === taskId);
+        const posturaUpdate = ({
+            ...task,
+            idPostura: columnId,
+        });
+        console.log(posturaUpdate);
+        putPostura(taskId, posturaUpdate);
+    };
+
+
     const onOpenModal = (id) => {
-
-
         console.log(id);
-
         const task = apiData.find((task) => task.idTarjetaOf === id);
-
-        setFilterTask(task ? [task] : []); 
-
+        setFilterTask(task ? [task] : []);
         handleOpenModal();
     }
 
@@ -276,21 +295,65 @@ function KanbanBoard() {
         const activeId = active.id;
         const overId = over.id;
 
-        if (activeId === overId) return;
-
         const isActiveAColumn = active.data.current?.type === "Column";
-        if (!isActiveAColumn) return;
+        const isActiveATask = active.data.current?.type === "Task";
+        const isOverAColumn = over.data.current?.type === "Column";
+        const isOverATask = over.data.current?.type === "Task";
 
-        console.log("DRAG END");
+        if (activeId === overId) {
+            if (isActiveATask && isOverATask) {
+                onDropTask(activeId, over.data.current.task.columnId);
+            }
+            return;
+        }
 
-        setColumns((columns) => {
-            const activeColumnIndex = columns.findIndex((col) => col.id === activeId);
+        if (isActiveATask && isOverAColumn) {
+            onDropTask(activeId, overId);
+        } else if (isActiveATask && isOverATask) {
+            onDropTask(activeId, over.data.current.task.columnId);
+        }
 
-            const overColumnIndex = columns.findIndex((col) => col.id === overId);
+        if (isActiveAColumn) {
+            setColumns((columns) => {
+                const activeColumnIndex = columns.findIndex((col) => col.id === activeId);
+                const overColumnIndex = columns.findIndex((col) => col.id === overId);
+                return arrayMove(columns, activeColumnIndex, overColumnIndex);
+            });
+            return;
+        }
 
-            return arrayMove(columns, activeColumnIndex, overColumnIndex);
-        });
+        if (isActiveATask) {
+            setTasks((tasks) => {
+                const activeTaskIndex = tasks.findIndex((task) => task.id === activeId);
+                const activeTask = tasks[activeTaskIndex];
+
+                if (isOverAColumn) {
+                    console.log("Task moved to new column");
+                    activeTask.columnId = overId;
+                    return [...tasks];
+                }
+
+
+                if (isOverATask) {
+                    console.log("Task moved over another task");
+                    const overTaskIndex = tasks.findIndex((task) => task.id === overId);
+                    const overTask = tasks[overTaskIndex];
+
+                    if (activeTask.columnId !== overTask.columnId) {
+                        activeTask.columnId = overTask.columnId;
+                    }
+
+                    const updatedTasks = tasks.filter((task) => task.id !== activeId);
+                    updatedTasks.splice(overTaskIndex, 0, activeTask);
+                    return updatedTasks;
+                }
+
+                return tasks;
+            });
+        }
     }
+
+
 
     function onDragOver(event) {
         const { active, over } = event;
@@ -313,7 +376,7 @@ function KanbanBoard() {
                 const overIndex = tasks.findIndex((t) => t.id === overId);
 
                 if (tasks[activeIndex].columnId !== tasks[overIndex].columnId) {
-                    // Fix introduced after video recording
+
                     tasks[activeIndex].columnId = tasks[overIndex].columnId;
                     return arrayMove(tasks, activeIndex, overIndex - 1);
                 }
@@ -331,12 +394,13 @@ function KanbanBoard() {
                 const activeIndex = tasks.findIndex((t) => t.id === activeId);
 
                 tasks[activeIndex].columnId = overId;
-                console.log("DROPPING TASK OVER COLUMN", { activeIndex });
+                console.log("DROPPING TASK OVER COLUMN", { activeIndex }, { overId });
+                //onDropTask(activeId, overId);
                 return arrayMove(tasks, activeIndex, activeIndex);
             });
         }
     }
-    
+
 }
 
 function generateId() {
