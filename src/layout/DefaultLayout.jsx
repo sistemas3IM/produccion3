@@ -8,8 +8,8 @@ const DefaultLayout = () => {
     return (
         <main className='flex overflow-x-hidden'>
             <SideBar>
-                <SideBarItem icon={<MdDashboard size={20} />} text={'Tableros'} active linkTo={"/tablero"} />
-                <SideBarItem icon={<TbReportSearch size={20} />} text={'Reportes'} />
+                <SideBarItem icon={<MdDashboard size={20} />} text={'Tableros'} linkTo={"/tablero"} />
+                <SideBarItem icon={<TbReportSearch size={20} />} text={'Reportes'} linkTo={'/reportes'} />
             </SideBar>
             <div className='flex-1 bg-neutral-300 overflow-auto'>
                     <Outlet />

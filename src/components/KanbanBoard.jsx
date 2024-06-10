@@ -13,6 +13,7 @@ import { SortableContext, arrayMove } from "@dnd-kit/sortable";
 import { createPortal } from "react-dom";
 import TaskCard from "./TaskCard";
 import ModalEditCard from "./ModalEditCard";
+import { endpoint, CREDENTIALS } from "../config";
 
 const defaultCols = [
     {
@@ -64,7 +65,7 @@ function KanbanBoard() {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const response = await axios.get('http://192.168.2.62:665/api/Tarjeta_OF/?apiKey=7P7r71jzP8D54RFclyH8hfg');
+                const response = await axios.get(`${endpoint.tajetas_of}${CREDENTIALS}`);
                 setApiData(response.data);
                 setData(response.data);
                 console.log(response.data);
@@ -75,7 +76,7 @@ function KanbanBoard() {
 
         const fetchPostura = async () => {
             try {
-                const response = await axios.get('http://192.168.2.62:665/api/Postura_OF/?apiKey=7P7r71jzP8D54RFclyH8hfg');
+                const response = await axios.get(`${endpoint.posturas_of}${CREDENTIALS}`);
                 setPostura(response.data);
                 setCols(response.data);
                 console.log(response.data);

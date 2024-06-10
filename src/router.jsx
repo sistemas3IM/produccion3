@@ -12,7 +12,13 @@ const router = createBrowserRouter([
         children: [
             {
                 path: "/tablero",
-                element: <Tablero />
+                element: <Tablero />,
+                children:[
+                    {
+                        path: "tablero/dev",
+                        element: <Development />
+                    },
+                ]
             },
             {
                 path: "/dev",
